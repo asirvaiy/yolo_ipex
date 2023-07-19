@@ -81,6 +81,7 @@ class BaseTrainer:
         """
         self.args = get_cfg(cfg, overrides)
         self.device = select_device(self.args.device, self.args.batch)
+        self.bf16= args.bf16
         self.check_resume()
         self.validator = None
         self.model = None
@@ -221,7 +222,8 @@ class BaseTrainer:
         if RANK > -1 and world_size > 1:  # DDP
             dist.broadcast(self.amp, src=0)  # broadcast the tensor from rank 0 to all other ranks (returns None)
         self.amp = bool(self.amp)  # as boolean
-        self.scaler = amp.GradScaler(enabled=self.amp)
+        if not BF16:
+            self.scaler = amp.GradScaler(enabled=self.amp)
         if world_size > 1:
             self.model = DDP(self.model, device_ids=[RANK])
         # Check imgsz
@@ -327,7 +329,9 @@ class BaseTrainer:
                             x['momentum'] = np.interp(ni, xi, [self.args.warmup_momentum, self.args.momentum])
 
                 # Forward
-                with torch.cuda.amp.autocast(self.amp):
+                cuda_amp = self.amp and not self.bf16
+                cpu_amp  = self.amp and self.bf16
+                with torch.cuda.amp.autocast(cuda_amp), torch.cpu.amp.autocast(cpu_amp):
                     batch = self.preprocess_batch(batch)
                     self.loss, self.loss_items = self.model(batch)
                     if RANK != -1:
