@@ -259,6 +259,10 @@ class BaseTrainer:
                                               momentum=self.args.momentum,
                                               decay=weight_decay,
                                               iterations=iterations)
+        
+        import intel_extension_for_pytorch as ipex
+        self.model, self.optimizer = ipex.optimize(self.model, optimizer=self.optimizer, dtype=torch.bfloat16)      
+        
         # Scheduler
         if self.args.cos_lr:
             self.lf = one_cycle(1, self.args.lrf, self.epochs)  # cosine 1->hyp['lrf']
