@@ -81,7 +81,7 @@ class BaseTrainer:
         """
         self.args = get_cfg(cfg, overrides)
         self.device = select_device(self.args.device, self.args.batch)
-        self.bf16= args.bf16
+        self.bf16= self.args.bf16
         self.check_resume()
         self.validator = None
         self.model = None
