@@ -305,6 +305,8 @@ class BasePredictor:
                                  dnn=self.args.dnn,
                                  data=self.args.data,
                                  fp16=self.args.half,
+                                 use_ipex=self.args.use_ipex,
+                                 bf16=self.args.bf16,
                                  fuse=True,
                                  verbose=verbose)
 
