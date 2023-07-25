@@ -465,13 +465,19 @@ class BaseTrainer:
 
     def optimizer_step(self):
         """Perform a single step of the training optimizer with gradient clipping and EMA update."""
-        self.scaler.unscale_(self.optimizer)  # unscale gradients
-        torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=10.0)  # clip gradients
-        self.scaler.step(self.optimizer)
-        self.scaler.update()
-        self.optimizer.zero_grad()
-        if self.ema:
+        if not self.bf16:
+          self.scaler.unscale_(self.optimizer)  # unscale gradients
+          torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=10.0)  # clip gradients
+          self.scaler.step(self.optimizer)
+          self.scaler.update()
+          self.optimizer.zero_grad()
+          if self.ema:
             self.ema.update(self.model)
+          
+        else:
+          torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=10.0)  # clip gradients
+          self.optimizer.step()
+    
 
     def preprocess_batch(self, batch):
         """
