@@ -56,6 +56,7 @@ class BaseTrainer:
         start_epoch (int): Starting epoch for training.
         device (torch.device): Device to use for training.
         amp (bool): Flag to enable AMP (Automatic Mixed Precision).
+        bf16 (bool): Enable AMP for CPU with BFloat16 
         scaler (amp.GradScaler): Gradient scaler for AMP.
         data (str): Path to data.
         trainset (torch.utils.data.Dataset): Training dataset.
@@ -82,6 +83,7 @@ class BaseTrainer:
         self.args = get_cfg(cfg, overrides)
         self.device = select_device(self.args.device, self.args.batch)
         self.bf16= self.args.bf16
+        self.use_ipex = self.args.use_ipex
         self.check_resume()
         self.validator = None
         self.model = None
@@ -259,9 +261,10 @@ class BaseTrainer:
                                               momentum=self.args.momentum,
                                               decay=weight_decay,
                                               iterations=iterations)
-        
-        import intel_extension_for_pytorch as ipex
-        self.model, self.optimizer = ipex.optimize(self.model, optimizer=self.optimizer, dtype=torch.bfloat16)      
+
+        if self.use_ipex:
+            import intel_extension_for_pytorch as ipex
+            self.model, self.optimizer = ipex.optimize(self.model, optimizer=self.optimizer, dtype=torch.bfloat16)      
         
         # Scheduler
         if self.args.cos_lr:
