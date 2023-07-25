@@ -47,6 +47,8 @@ class AutoBackend(nn.Module):
                  dnn=False,
                  data=None,
                  fp16=False,
+                 use_ipex=False, 
+                 bf16=False,
                  fuse=True,
                  verbose=True):
         """
@@ -109,6 +111,13 @@ class AutoBackend(nn.Module):
             model.half() if fp16 else model.float()
             self.model = model  # explicitly assign for to(), cpu(), cuda(), half()
             pt = True
+            if use_ipex:
+              self.model.eval()
+              import intel_extension_for_pytorch as ipex
+              if bf16:
+                self.model = ipex.optimize(self.model, dtype=torch.bfloat16)
+              else:
+                self.model = ipex.optimize(self.model) 
         elif pt:  # PyTorch
             from ultralytics.nn.tasks import attempt_load_weights
             model = attempt_load_weights(weights if isinstance(weights, list) else w,
@@ -121,6 +130,13 @@ class AutoBackend(nn.Module):
             names = model.module.names if hasattr(model, 'module') else model.names  # get class names
             model.half() if fp16 else model.float()
             self.model = model  # explicitly assign for to(), cpu(), cuda(), half()
+            if use_ipex:
+              self.model.eval()
+              import intel_extension_for_pytorch as ipex
+              if bf16:
+                self.model = ipex.optimize(self.model, dtype=torch.bfloat16)
+              else:
+                self.model = ipex.optimize(self.model) 
         elif jit:  # TorchScript
             LOGGER.info(f'Loading {w} for TorchScript inference...')
             extra_files = {'config.txt': ''}  # model metadata
@@ -333,7 +349,8 @@ class AutoBackend(nn.Module):
             im = im.permute(0, 2, 3, 1)  # torch BCHW to numpy BHWC shape(1,320,192,3)
 
         if self.pt or self.nn_module:  # PyTorch
-            y = self.model(im, augment=augment, visualize=visualize) if augment or visualize else self.model(im)
+            with torch.no_grad(), torch.cpu.amp.autocast(self.bf16):
+                y = self.model(im, augment=augment, visualize=visualize) if augment or visualize else self.model(im)
         elif self.jit:  # TorchScript
             y = self.model(im)
         elif self.dnn:  # ONNX OpenCV DNN
