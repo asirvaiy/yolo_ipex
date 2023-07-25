@@ -47,6 +47,8 @@ conf:  # (float, optional) object confidence threshold for detection (default 0.
 iou: 0.7  # (float) intersection over union (IoU) threshold for NMS
 max_det: 300  # (int) maximum number of detections per image
 half: False  # (bool) use half precision (FP16)
+use_ipex: False # (bool) apply Intel Extension for PyTorch optimizations
+bf16: False # (bool)  apply BF16 AMP on Intel 4th gen(SPR)
 dnn: False  # (bool) use OpenCV DNN for ONNX inference
 plots: True  # (bool) save plots during train/val
 
