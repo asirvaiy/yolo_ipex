@@ -113,7 +113,9 @@ class BaseValidator:
                                 device=select_device(self.args.device, self.args.batch),
                                 dnn=self.args.dnn,
                                 data=self.args.data,
-                                fp16=self.args.half)
+                                fp16=self.args.half, 
+                                use_ipex=self.args.use_ipex,
+                                bf16=self.args.bf16)
             self.model = model
             self.device = model.device  # update device
             self.args.half = model.fp16  # update half
