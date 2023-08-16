@@ -401,11 +401,15 @@ def check_amp(model):
     def amp_allclose(m, im):
         """All close FP32 vs AMP results."""
         a = m(im, device=device, verbose=False)[0].boxes.data  # FP32 inference
-        with torch.cuda.amp.autocast(True):
-            b = m(im, device=device, verbose=False)[0].boxes.data  # AMP inference
+        if device == 'xpu:0':
+            with torch.xpu.amp.autocast(True):
+                b = m(im, device=device, verbose=False)[0].boxes.data  # AMP inference
+        else:
+            with torch.cuda.amp.autocast(True):
+                b = m(im, device=device, verbose=False)[0].boxes.data  # AMP inference
         del m
         return a.shape == b.shape and torch.allclose(a, b.float(), atol=0.5)  # close to 0.5 absolute tolerance
-
+  
     f = ROOT / 'assets/bus.jpg'  # image to check
     im = f if f.exists() else 'https://ultralytics.com/images/bus.jpg' if ONLINE else np.ones((640, 640, 3))
     prefix = colorstr('AMP: ')
